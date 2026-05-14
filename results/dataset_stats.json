@@ -1,0 +1,29 @@
+{
+  "temporal": {
+    "timesteps": 34272,
+    "span_days": 119.0
+  },
+  "spatial": {
+    "num_nodes": 207,
+    "num_edges": 1722,
+    "self_loops": 207,
+    "density_pct": 4.038,
+    "symmetric": false,
+    "degree_min": 1,
+    "degree_max": 19,
+    "degree_mean": 8.32,
+    "edge_weight_mean": 0.473,
+    "edge_weight_std": 0.3147
+  },
+  "features": {
+    "num_features": 2,
+    "speed_min": 0.0,
+    "speed_max": 70.0,
+    "speed_mean": 53.72,
+    "speed_std": 20.26,
+    "speed_q10": 17.44,
+    "speed_q50": 62.44,
+    "speed_q90": 68.12,
+    "missing_zeros_pct": 8.1094
+  }
+}

@@ -1,0 +1,41 @@
+# =================================================================
+# Trafik Tahmini için Spatio-Temporal GNN — Python Bağımlılıkları
+# =================================================================
+#
+# KURULUM SIRASI (PyTorch ve PyG ayrı, CUDA versiyonuna duyarlı):
+#
+#   1. .\venv\Scripts\activate
+#   2. pip install --upgrade pip
+#   3. pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+#   4. pip install torch_geometric
+#   5. pip install torch-geometric-temporal
+#   6. pip install -r requirements.txt
+#
+# (Bu dosya yalnız "kalan" paketleri listeler; torch ve pyg yukarıda kuruluyor.)
+
+# --- Veri & Analiz ---
+numpy
+pandas
+scipy
+
+# --- Görselleştirme ---
+matplotlib
+seaborn
+networkx
+plotly
+folium
+
+# --- ML Yardımcılar ---
+scikit-learn
+tqdm
+
+# --- Notebook ---
+jupyter
+ipykernel
+ipywidgets
+
+# --- Klasik Time Series Baseline (ARIMA için) ---
+statsmodels
+
+# --- Simulator (interaktif trafik demo) ---
+streamlit
