@@ -55,6 +55,11 @@ results/runs/
 *.bin
 *.safetensors
 
+# Tezdeki eğitilmiş 3 modeli istisna olarak tut (Streamlit Cloud için gerekli, ~1.5 MB)
+!results/model_a3tgcn_baseline.pt
+!results/model_dcrnn_baseline.pt
+!results/model_vanilla_lstm.pt
+
 # =============================================================================
 # Loglar
 # =============================================================================
