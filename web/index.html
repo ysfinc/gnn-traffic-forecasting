@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trafik Tahmini · Spatio-Temporal GNN | Yusuf İnce</title>
+<meta name="description" content="METR-LA veri kümesi üzerinde Graf Sinir Ağları (DCRNN, A3T-GCN) ile trafik hız tahmini. Etkileşimli demo + ISSD entegrasyon önerisi.">
+<meta name="author" content="Yusuf İnce">
+
+<!--
+  ====================================================================
+  TRAFİK TAHMİNİ DEMO — Landing Page
+  ====================================================================
+  Yusuf İnce · Yapay Zeka Mühendisliği · 2026
+  GitHub: https://github.com/ysfinc/gnn-traffic-forecasting
+
+  STREAMLIT CLOUD DEMO URL'İNİ AŞAĞIDA `data-streamlit-url` ATRİBÜTÜYLE
+  AYARLAMAN GEREKİYOR. Şu anda yer tutucu — Streamlit Cloud'a deploy
+  edip URL'ini al, aşağıdaki STREAMLIT_DEMO_URL satırını güncelle.
+  ====================================================================
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+  /* ─── Reset + Base ─────────────────────────────────────────────── */
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #fafbfc;
+    --surface: #ffffff;
+    --border: #e5e7eb;
+    --border-strong: #cbd5e1;
+    --text: #0f172a;
+    --text-muted: #475569;
+    --text-subtle: #94a3b8;
+    --primary: #2563eb;
+    --primary-light: #dbeafe;
+    --primary-dark: #1e40af;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+    --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.04);
+    --radius: 12px;
+    --radius-lg: 16px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ─── Header ───────────────────────────────────────────────────── */
+  header {
+    padding: 18px 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(8px);
+    background: rgba(255,255,255,0.85);
+  }
+  .nav { display: flex; justify-content: space-between; align-items: center; }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 1.05rem;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 1.2rem;
+  }
+  .nav-links { display: flex; gap: 28px; }
+  .nav-links a {
+    color: var(--text-muted); font-weight: 500;
+    font-size: 0.92rem; transition: color 0.15s;
+  }
+  .nav-links a:hover { color: var(--primary); text-decoration: none; }
+
+  /* ─── Hero ─────────────────────────────────────────────────────── */
+  .hero {
+    padding: 80px 0 60px 0;
+    text-align: center;
+  }
+  .hero-tag {
+    display: inline-block;
+    padding: 5px 14px;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    border-radius: 100px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 22px;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    margin-bottom: 22px;
+    background: linear-gradient(135deg, #0f172a 0%, #2563eb 60%, #1e40af 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p.lead {
+    font-size: 1.15rem;
+    color: var(--text-muted);
+    max-width: 720px;
+    margin: 0 auto 36px auto;
+  }
+  .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.15s;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    border: 1px solid var(--primary);
+    box-shadow: var(--shadow);
+  }
+  .btn-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    text-decoration: none;
+    box-shadow: var(--shadow-lg);
+  }
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-secondary:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    text-decoration: none;
+  }
+
+  /* ─── Section spacing ──────────────────────────────────────────── */
+  section { padding: 60px 0; }
+  .section-tag {
+    display: inline-block;
+    color: var(--primary);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  .section-lead {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    max-width: 720px;
+    margin-bottom: 40px;
+  }
+
+  /* ─── Cards (özellikler) ───────────────────────────────────────── */
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 26px;
+    transition: all 0.2s;
+  }
+  .card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+  }
+  .card-icon {
+    width: 44px; height: 44px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    margin-bottom: 16px;
+  }
+  .card h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .card p {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+  }
+
+  /* ─── KPI strip ───────────────────────────────────────────────── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+  }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+  }
+  .kpi-label {
+    color: var(--text-muted);
+    font-size: 0.74rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 8px;
+  }
+  .kpi-value {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--primary);
+  }
+  .kpi-sub { color: var(--text-subtle); font-size: 0.82rem; }
+
+  /* ─── Demo iframe ──────────────────────────────────────────────── */
+  .demo-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+  }
+  .demo-header {
+    padding: 16px 22px;
+    background: linear-gradient(90deg, var(--surface) 0%, #f8fafc 100%);
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .demo-header-title {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 600; color: var(--text);
+  }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 0 4px rgba(16,185,129,0.2);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .demo-iframe-wrap {
+    position: relative;
+    width: 100%;
+    height: 700px;
+    background: #f8fafc;
+  }
+  .demo-iframe {
+    width: 100%; height: 100%; border: none;
+  }
+  .demo-fallback {
+    padding: 60px 30px;
+    text-align: center;
+  }
+  .demo-fallback h3 { margin-bottom: 12px; font-size: 1.25rem; }
+  .demo-fallback p { color: var(--text-muted); margin-bottom: 22px; }
+
+  /* ─── Map embed ───────────────────────────────────────────────── */
+  .map-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .map-header {
+    padding: 16px 22px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+  }
+  .map-iframe {
+    width: 100%; height: 580px; border: none;
+  }
+
+  /* ─── Image gallery ───────────────────────────────────────────── */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 20px;
+  }
+  .gallery-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s;
+  }
+  .gallery-item:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+  .gallery-item img {
+    width: 100%; display: block;
+  }
+  .gallery-caption {
+    padding: 14px 18px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .gallery-caption-title {
+    font-weight: 600; font-size: 0.95rem; margin-bottom: 4px;
+  }
+  .gallery-caption-sub { color: var(--text-muted); font-size: 0.85rem; }
+
+  /* ─── Author ───────────────────────────────────────────────────── */
+  .author-card {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+  }
+  .author-card h2 { font-size: 1.6rem; margin-bottom: 8px; color: white; }
+  .author-card p { opacity: 0.92; margin-bottom: 20px; }
+  .author-card .btn-secondary {
+    background: white; color: var(--primary-dark);
+    border-color: transparent;
+  }
+
+  /* ─── Footer ───────────────────────────────────────────────────── */
+  footer {
+    padding: 30px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--text-subtle);
+    font-size: 0.88rem;
+  }
+  footer a { color: var(--text-muted); }
+
+  /* ─── Responsive ──────────────────────────────────────────────── */
+  @media (max-width: 600px) {
+    .nav-links { display: none; }
+    .hero { padding: 50px 0 40px 0; }
+    section { padding: 40px 0; }
+    .section-title { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="container nav">
+    <div class="logo">
+      <div class="logo-icon">🛰</div>
+      <span>Trafik Tahmini</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#demo">Demo</a>
+      <a href="#sonuclar">Sonuçlar</a>
+      <a href="#harita">Harita</a>
+      <a href="#yazar">Yazar</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="container">
+    <span class="hero-tag">DERİN ÖĞRENME FİNAL PROJESİ · MAYIS 2026</span>
+    <h1>Graf Sinir Ağları ile<br>Trafik Hız Tahmini</h1>
+    <p class="lead">
+      Los Angeles otoyol ağındaki 207 sensör üzerinde
+      <strong>spatio-temporal graf sinir ağı</strong> mimarilerinin
+      (DCRNN, A3T-GCN ve klasik LSTM) yeterlilik analizi ve etkileşimli
+      kontrol panosu prototipi.
+    </p>
+    <div class="hero-actions">
+      <a href="#demo" class="btn btn-primary">
+        🛰 Etkileşimli Demoyu Aç
+      </a>
+      <a href="https://github.com/ysfinc/gnn-traffic-forecasting" target="_blank" class="btn btn-secondary">
+        ⭐ GitHub'da Görüntüle
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ÖZELLİKLER ═══ -->
+<section>
+  <div class="container">
+    <span class="section-tag">PROJE ÖZELLIKLERI</span>
+    <h2 class="section-title">Üç Mimari, Tek Karşılaştırma</h2>
+    <p class="section-lead">
+      Bu çalışma, trafik tahmininde graf sinir ağlarının yeterlilik
+      koşullarını sistematik olarak incelemekte; mimari seçiminin
+      operasyonel ihtiyaca göre nasıl yapılması gerektiğini ortaya
+      koymaktadır.
+    </p>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-icon">🔗</div>
+        <h3>DCRNN</h3>
+        <p>Yönlü difüzyon konvolüsyonu + GRU. METR-LA'nın asimetrik
+        komşuluk yapısını doğrudan modelleyebilen tek mimari. Uzun
+        ufukta ve RMSE metriğinde öne çıkıyor.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🎯</div>
+        <h3>A3T-GCN</h3>
+        <p>Klasik graf konvolüsyonu + zamansal dikkat mekanizması.
+        Simetrik komşuluk varsayımı nedeniyle yönlülük bilgisini
+        kaybeden mimari — çalışmanın karşılaştırma noktası.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <h3>Vanilla LSTM</h3>
+        <p>Graf yapısı kullanmayan kontrol grubu. Paylaşılan parametreli
+        tek katmanlı tekrarlı ağ. Kısa-orta ufukta sürpriz biçimde
+        rekabetçi karşılaştırma noktası.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ANAHTAR BULGULAR ═══ -->
+<section id="sonuclar" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+  <div class="container">
+    <span class="section-tag">ANAHTAR BULGULAR</span>
+    <h2 class="section-title">Sayılarla Sonuçlar</h2>
+    <p class="section-lead">
+      Test kümesi üzerinde 10 epoch, hidden=128 ile elde edilen
+      sonuçlar. Mimari yeterliliği tahmin ufkuna ve hata metriğine
+      bağlı olarak değişmektedir.
+    </p>
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">DCRNN · MAE</div>
+        <div class="kpi-value">6,28</div>
+        <div class="kpi-sub">mph · 60 dk ufuk</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">DCRNN · RMSE</div>
+        <div class="kpi-value">11,90</div>
+        <div class="kpi-sub">mph · en iyi RMSE</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">LSTM · MAE</div>
+        <div class="kpi-value">6,05</div>
+        <div class="kpi-sub">mph · en iyi MAE</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Geçiş Noktası</div>
+        <div class="kpi-value">~55dk</div>
+        <div class="kpi-sub">DCRNN > LSTM</div>
+      </div>
+    </div>
+
+    <div class="gallery" style="margin-top: 30px;">
+      <div class="gallery-item">
+        <img src="realunit_horizon_mae.png" alt="Horizon MAE">
+        <div class="gallery-caption">
+          <div class="gallery-caption-title">Ufuk-Bazlı MAE</div>
+          <div class="gallery-caption-sub">Üç mimarinin tahmin ufkuna göre hata trendi</div>
+        </div>
+      </div>
+      <div class="gallery-item">
+        <img src="comparison_test_metrics.png" alt="Test metrikleri">
+        <div class="gallery-caption">
+          <div class="gallery-caption-title">Test MAE / RMSE Karşılaştırması</div>
+          <div class="gallery-caption-sub">MAE'de LSTM, RMSE'de DCRNN öne çıkıyor</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ DEMO ═══ -->
+<section id="demo">
+  <div class="container">
+    <span class="section-tag">İNTERAKTİF DEMO</span>
+    <h2 class="section-title">🛰 Etkileşimli Kontrol Panosu</h2>
+    <p class="section-lead">
+      Aşağıdaki panoda kavşaklara trafik müdahalesi yapabilir ve
+      DCRNN modelinin 60 dakika sonrasını nasıl tahmin ettiğini
+      gözlemleyebilirsiniz. <strong>Müdahaleli senaryo</strong> ile
+      <strong>baseline</strong> yan yana karşılaştırılır; ikisi
+      arasındaki <strong>fark haritası</strong> graf yapısının
+      yayılma etkisini doğrudan gösterir.
+    </p>
+
+    <div class="demo-card" id="demoCard"
+         data-streamlit-url="STREAMLIT_DEMO_URL">
+      <div class="demo-header">
+        <div class="demo-header-title">
+          <span class="live-dot" id="liveDot"></span>
+          <span id="demoHeaderText">Trafik Kontrol Merkezi · Canlı Demo</span>
+        </div>
+        <a href="STREAMLIT_DEMO_URL" target="_blank" id="openExtBtn"
+           class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.82rem;">
+          Yeni Sekmede Aç ↗
+        </a>
+      </div>
+      <div class="demo-iframe-wrap" id="demoWrap">
+        <!-- Iframe veya fallback JS ile dinamik yerleştirilir -->
+      </div>
+    </div>
+
+    <script>
+      // Streamlit Cloud URL kontrol: ayarlanmamışsa hazırlama mesajı, ayarlanmışsa iframe
+      (function() {
+        var card = document.getElementById('demoCard');
+        var url  = card.getAttribute('data-streamlit-url');
+        var wrap = document.getElementById('demoWrap');
+        var live = document.getElementById('liveDot');
+        var btn  = document.getElementById('openExtBtn');
+        var head = document.getElementById('demoHeaderText');
+
+        var notDeployed = (
+          !url || url === 'STREAMLIT_DEMO_URL' || url.indexOf('http') !== 0
+        );
+
+        if (notDeployed) {
+          // Demo henüz aktif değil — bilgilendirici fallback göster
+          live.style.background = '#f59e0b';
+          live.style.boxShadow  = '0 0 0 4px rgba(245,158,11,0.2)';
+          head.textContent = 'Trafik Kontrol Merkezi · Hazırlanıyor';
+          btn.removeAttribute('target');
+          btn.removeAttribute('href');
+          btn.style.opacity = '0.5';
+          btn.style.cursor  = 'not-allowed';
+          wrap.innerHTML =
+            '<div class="demo-fallback">' +
+              '<div style="font-size:3rem; margin-bottom: 12px;">🚀</div>' +
+              '<h3>Demo Streamlit Cloud üstünde hazırlanıyor</h3>' +
+              '<p>Etkileşimli kontrol panosu birkaç dakika içinde burada canlı olacak.<br>' +
+              'Bu sırada projeyi GitHub deposunda inceleyebilirsiniz.</p>' +
+              '<div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:14px;">' +
+                '<a href="https://github.com/ysfinc/gnn-traffic-forecasting" target="_blank" class="btn btn-primary">' +
+                  '📂 GitHub\'da Görüntüle' +
+                '</a>' +
+                '<a href="#harita" class="btn btn-secondary">' +
+                  '🗺 Sensör Haritasına Git' +
+                '</a>' +
+              '</div>' +
+            '</div>';
+        } else {
+          // URL ayarlanmış — gerçek iframe
+          var iframe = document.createElement('iframe');
+          iframe.className = 'demo-iframe';
+          iframe.src       = url;
+          iframe.title     = 'Trafik Tahmini Demo';
+          iframe.allow     = 'fullscreen';
+          iframe.loading   = 'lazy';
+          wrap.appendChild(iframe);
+        }
+      })();
+    </script>
+
+    <div style="margin-top: 24px; padding: 18px 22px; background: var(--primary-light); border-radius: var(--radius); color: var(--primary-dark);">
+      <strong>💡 İpucu:</strong> Yukarıdaki panoda
+      <code style="background: rgba(255,255,255,0.6); padding: 1px 6px; border-radius: 4px;">💥 Kaza</code>
+      senaryosuna tıklayın — tek bir kavşağı tıkadığınızda komşu
+      kavşaklara dalga etkisinin nasıl yayıldığını izleyebilirsiniz.
+    </div>
+  </div>
+</section>
+
+<!-- ═══ HARİTA ═══ -->
+<section id="harita" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+  <div class="container">
+    <span class="section-tag">SENSÖR AĞI</span>
+    <h2 class="section-title">METR-LA Sensör Haritası</h2>
+    <p class="section-lead">
+      Los Angeles otoyol şebekesindeki 207 hız sensörünün gerçek
+      coğrafi konumları. Sensörlere tıklayarak hız ve komşu sayısı
+      bilgilerini görebilir, haritayı büyütüp inceleyebilirsiniz.
+    </p>
+
+    <div class="map-card">
+      <div class="map-header">📍 207 Sensör · Tıklanabilir Etkileşimli Harita</div>
+      <iframe class="map-iframe" src="sensor_map.html" loading="lazy"
+              title="LA Sensör Haritası"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ GÖRSEL GALERİ ═══ -->
+<section>
+  <div class="container">
+    <span class="section-tag">DAHA FAZLA GÖRSEL</span>
+    <h2 class="section-title">Detaylı Analiz</h2>
+
+    <div class="gallery">
+      <div class="gallery-item">
+        <img src="sensor_map_static.png" alt="LA sensör ağı">
+        <div class="gallery-caption">
+          <div class="gallery-caption-title">LA Sensör Ağı — Statik</div>
+          <div class="gallery-caption-sub">Renkler ortalama hızı, çizgiler güçlü kenarları gösterir</div>
+        </div>
+      </div>
+      <div class="gallery-item">
+        <img src="viz_horizon_mae_multi.png" alt="Multi-model horizon">
+        <div class="gallery-caption">
+          <div class="gallery-caption-title">Üç Mimari Karşılaştırma</div>
+          <div class="gallery-caption-sub">5-60 dakika ufuk aralığında MAE eğrileri</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ YAZAR ═══ -->
+<section id="yazar">
+  <div class="container">
+    <div class="author-card">
+      <h2>Yusuf İnce</h2>
+      <p>Yapay Zeka Mühendisliği · 3. Sınıf · Derin Öğrenme Final Projesi</p>
+      <div class="hero-actions">
+        <a href="https://github.com/ysfinc/gnn-traffic-forecasting" target="_blank" class="btn btn-secondary">
+          📂 Kaynak Kodu (GitHub)
+        </a>
+        <a href="https://github.com/ysfinc/gnn-traffic-forecasting/raw/main/report/thesis.docx" class="btn btn-secondary">
+          📄 Tez Raporu (Word)
+        </a>
+        <a href="mailto:inceyusuf2121@gmail.com" class="btn btn-secondary">
+          ✉ İletişim
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="container">
+    <p>
+      © 2026 Yusuf İnce · Derin Öğrenme Final Projesi ·
+      <a href="https://github.com/ysfinc/gnn-traffic-forecasting" target="_blank">GitHub</a> ·
+      <a href="https://www.issd.com.tr" target="_blank">ISSD</a> bağlamında
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -27,6 +27,10 @@ streamlit run simulator/app.py
 
 LA highway ağındaki bir bölgenin sensörlerinde trafik yoğunluğunu slider'larla değiştir → DCRNN modeli 60 dakika öne tahmin yapar → kavşaklar 🟢/🟡/🔴 olarak işaretlenir. Defansta canlı demo için ideal. Detay: [`simulator/README.md`](simulator/README.md)
 
+## 🌐 Web Tanıtım Sayfası
+
+Self-host edilebilir bir landing page de `web/` altında mevcut — paylaşımlı PHP hosting'e de yüklenebilir (Streamlit Cloud demosu iframe ile gömülü). Detaylı kurulum: [`web/README.md`](web/README.md)
+
 ---
 
 ## İçindekiler
